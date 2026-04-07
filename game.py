@@ -3,6 +3,8 @@ from settings import *
 from entities.player import Player
 from entities.maze import Maze
 from storage import Storage
+from entities.coin import Coin
+
 
 class Game:
     def __init__(self):
@@ -13,7 +15,6 @@ class Game:
         self.clock = pygame.time.Clock()
 
         self.running = True
-        self.paused = False
 
         self.storage = Storage("data.json")
         self.data = self.storage.load()
@@ -24,6 +25,9 @@ class Game:
         self.maze = Maze(GRID_H, GRID_W)
         self.player = Player(1, 1)
         self.goal = (GRID_H - 2, GRID_W - 2)
+
+        self.coins = [Coin(self.maze) for _ in range(5)]
+        self.score = 0
 
         self.start_time = pygame.time.get_ticks()
 
@@ -45,9 +49,16 @@ class Game:
                 self.player.move(0, 1, self.maze)
 
     def update(self):
+        # Coin collection
+        for coin in self.coins[:]:
+            if (self.player.x, self.player.y) == (coin.x, coin.y):
+                self.coins.remove(coin)
+                self.score += 10
+
+        # Win condition
         if (self.player.x, self.player.y) == self.goal:
             time_taken = pygame.time.get_ticks() - self.start_time
-            score = max(1, 10000 - time_taken)
+            score = max(1, 100 - time_taken)
 
             if score > self.data["high_score"]:
                 self.data["high_score"] = score
@@ -63,21 +74,40 @@ class Game:
         for i in range(self.maze.rows):
             for j in range(self.maze.cols):
                 if self.maze.grid[i][j] == 1:
-                    pygame.draw.rect(self.screen, (0, 0, 0),
-                                     (j * GRID_SIZE, i * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+                    pygame.draw.rect(
+                        self.screen,
+                        (0, 0, 0),
+                        (j * GRID_SIZE, i * GRID_SIZE, GRID_SIZE, GRID_SIZE)
+                    )
+
+        # draw coins
+        for coin in self.coins:
+            coin.draw(self.screen, GRID_SIZE)
 
         # draw goal
-        pygame.draw.rect(self.screen, (255, 0, 0),
-                         (self.goal[1] * GRID_SIZE, self.goal[0] * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+        pygame.draw.rect(
+            self.screen,
+            (255, 0, 0),
+            (self.goal[1] * GRID_SIZE, self.goal[0] * GRID_SIZE, GRID_SIZE, GRID_SIZE)
+        )
 
         # draw player
         self.player.draw(self.screen, GRID_SIZE)
 
-        # show score
+        # ===== UI (VISIBLE SCORE) =====
         font = pygame.font.SysFont(None, 30)
-        text = font.render(f"High Score: {self.data['high_score']}", True, (0, 0, 0))
-        self.screen.blit(text, (10, 10))
 
+        # background box
+        pygame.draw.rect(self.screen, (0, 0, 0), (5, 5, 220, 70))
+
+        # score text
+        score_text = font.render(
+            f"Score: {self.score}", True, (255, 255, 255)
+        )
+        self.screen.blit(score_text, (10, 10))
+
+        
+       
         pygame.display.flip()
 
     def run(self):
