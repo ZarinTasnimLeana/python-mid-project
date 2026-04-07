@@ -94,7 +94,7 @@ class Game:
         # draw player
         self.player.draw(self.screen, GRID_SIZE)
 
-        # ===== UI (VISIBLE SCORE) =====
+         
         font = pygame.font.SysFont(None, 30)
 
         # background box
